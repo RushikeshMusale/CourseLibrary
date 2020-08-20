@@ -25,6 +25,30 @@ namespace CourseLibrary.API.Services
         // NOTE: that each PropertyMapping can have different Tsource & TDestination
         private IList<IPropertyMapping> _propertyMappings = new List<IPropertyMapping>();
 
+        public bool ValidMappingExsitsFor<TSource, TDestination>(string fields) // field is orderBy clause
+        {
+            var propertyMapping = GetPropertyMapping<TSource, TDestination>();
+
+            if (string.IsNullOrWhiteSpace(fields))
+                return true;
+
+            var fieldAfterSplit = fields.Split(',');
+
+            foreach (var field in fieldAfterSplit)
+            {
+                var trimmedField = field.Trim();
+
+                var indexOfFirstSpace = trimmedField.IndexOf(" ");
+
+                var propertyName = (indexOfFirstSpace == -1) ?
+                    string.Empty : trimmedField.Remove(indexOfFirstSpace);
+
+                if (!propertyMapping.ContainsKey(propertyName))
+                    return false;
+            }
+            return true;
+        }
+
         public PropertyMappingService()
         {
             _propertyMappings.Add(new PropertyMapping<AuthorDto, Author>(_authorPropertyMapping));
