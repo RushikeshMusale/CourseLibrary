@@ -41,7 +41,7 @@ namespace CourseLibrary.API.Services
                 var indexOfFirstSpace = trimmedField.IndexOf(" ");
 
                 var propertyName = (indexOfFirstSpace == -1) ?
-                    string.Empty : trimmedField.Remove(indexOfFirstSpace);
+                    field : trimmedField.Remove(indexOfFirstSpace);
 
                 if (!propertyMapping.ContainsKey(propertyName))
                     return false;
