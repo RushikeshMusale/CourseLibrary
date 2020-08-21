@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CourseLibrary.API.Entities;
+using System.Dynamic;
 
 namespace CourseLibrary.API.Controllers
 {
@@ -34,7 +35,7 @@ namespace CourseLibrary.API.Controllers
 
         [HttpGet(Name ="GetAuthors")]
         [HttpHead]
-        public ActionResult<IEnumerable<AuthorDto>> GetAuthors(
+        public ActionResult<IEnumerable<ExpandoObject>> GetAuthors(
             [FromQuery] AuthorsResourceParameters authorsResourceParameters)
         {
             if(!_propertyMappingService.
@@ -70,7 +71,8 @@ namespace CourseLibrary.API.Controllers
             // let's add it to response using System.Text.Json
             Response.Headers.Add("X-Pagination", JsonSerializer.Serialize(paginationMetaData));
 
-            return Ok(_mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo));
+            return Ok(_mapper.Map<IEnumerable<AuthorDto>>(authorsFromRepo)
+                .ShapeData<AuthorDto>(authorsResourceParameters.Fields));
         }
 
         [HttpGet("{authorId}", Name ="GetAuthor")]
@@ -132,6 +134,7 @@ namespace CourseLibrary.API.Controllers
                     return Url.Link("GetAuthors", 
                         new
                         {
+                            fields = authorsResourceParameters.Fields,
                             orderBy = authorsResourceParameters.OrderBy,
                             pageNumber = authorsResourceParameters.PageNumber-1,
                             pageSize = authorsResourceParameters.PageSize,
@@ -143,6 +146,7 @@ namespace CourseLibrary.API.Controllers
                     return Url.Link("GetAuthors",
                         new
                         {
+                            fields = authorsResourceParameters.Fields,
                             orderBy = authorsResourceParameters.OrderBy,
                             pageNumber = authorsResourceParameters.PageNumber + 1,
                             pageSize = authorsResourceParameters.PageSize,
@@ -154,6 +158,7 @@ namespace CourseLibrary.API.Controllers
                     return Url.Link("GetAuthors",
                         new
                         {
+                            fields = authorsResourceParameters.Fields,
                             orderBy = authorsResourceParameters.OrderBy,
                             pageNumber = authorsResourceParameters.PageNumber,
                             pageSize = authorsResourceParameters.PageSize,
