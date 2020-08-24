@@ -3,6 +3,7 @@ using CourseLibrary.API.Helpers;
 using CourseLibrary.API.Models;
 using CourseLibrary.API.ResourceParameters;
 using CourseLibrary.API.Services;
+
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using System;
@@ -96,8 +97,15 @@ namespace CourseLibrary.API.Controllers
             {
                 return NotFound();
             }
-             
-            return Ok(_mapper.Map<AuthorDto>(authorFromRepo).ShapeData<AuthorDto>(fields));
+
+            var links = CreateLinksForAuthor(authorId, fields);
+
+            var linkedResourceToReturn = _mapper.Map<AuthorDto>(authorFromRepo)
+                                            .ShapeData<AuthorDto>(fields) as IDictionary<string, object>;
+
+            linkedResourceToReturn.Add("links", links);
+
+            return Ok(linkedResourceToReturn);
         }
 
         [HttpPost]
@@ -108,9 +116,17 @@ namespace CourseLibrary.API.Controllers
             _courseLibraryRepository.Save();
 
             var authorToReturn = _mapper.Map<AuthorDto>(authorEntity);
+   
+            var links = CreateLinksForAuthor(authorToReturn.Id, null);
+
+            var linkedResourceToReturn = authorToReturn.ShapeData<AuthorDto>(null)
+                                            as IDictionary<string, object>;
+
+            linkedResourceToReturn.Add("links", links);
+
             return CreatedAtRoute("GetAuthor",
                 new { authorId = authorToReturn.Id },
-                authorToReturn);
+                linkedResourceToReturn);
         }
 
         [HttpOptions]
@@ -120,7 +136,7 @@ namespace CourseLibrary.API.Controllers
             return Ok();
         }
 
-        [HttpDelete("{authorId}")]
+        [HttpDelete("{authorId}", Name = "DeleteAuthor")]
         public ActionResult DeleteAuthor(Guid authorId)
         {
             var authorFromRepo = _courseLibraryRepository.GetAuthor(authorId);
@@ -178,6 +194,52 @@ namespace CourseLibrary.API.Controllers
                             searchQuery = authorsResourceParameters.SearchQuery
                         });
             }
+        }
+
+        private IEnumerable<LinkDto> CreateLinksForAuthor(Guid authorId, string fields)
+        {
+            // this is a place to add links related to authors
+            // so if we have any buisenss constraints for a capability, 
+            // here should we decide to add or not the link
+            var links = new List<LinkDto>();
+            if(string.IsNullOrWhiteSpace(fields))
+            {
+                links.Add(
+                    new LinkDto(
+                        Url.Link("GetAuthor", new { authorId }),
+                        "self",
+                        "GET"));
+            }
+            else
+            {
+                links.Add(
+                    new LinkDto(
+                        Url.Link("GetAuthor", new { authorId , fields}),
+                        "self",
+                        "GET"));
+            }
+
+            links.Add(
+                    new LinkDto(
+                        Url.Link("DeleteAuthor", new { authorId }),
+                        "delete_author",
+                        "DELETE"));
+
+            links.Add(
+                new LinkDto(
+                        Url.Link("CreateCourseForAuthor", new {authorId}),
+                        "create_course_for_author",
+                        "POST"
+                    ));
+
+            links.Add(
+                new LinkDto(
+                        Url.Link("GetCoursesForAuthor", new { authorId }),
+                        "courses",
+                        "GET"
+                    ));            
+
+            return links;
         }
     }
 }
