@@ -95,6 +95,11 @@ namespace CourseLibrary.API.Controllers
         }
 
         [HttpGet("{authorId}", Name ="GetAuthor")]
+        [Produces("application/json",
+            "application/vnd.marvin.author.full+json",
+            "application/vnd.marvin.author.full.hateoas+json",
+            "application/vnd.marvin.author.friendly+json",
+            "application/vnd.marvin.author.friendly.hateoas+json")]
         public IActionResult GetAuthor(Guid authorId, string fields,
             [FromHeader(Name = "Accept")] string mediaType)
         {
@@ -114,21 +119,50 @@ namespace CourseLibrary.API.Controllers
             {
                 return NotFound();
             }
-            // return links only if consumer is asking for it in the Accept header
-            // NOTE: To use the custom mediaTypes we have to add output formatter to MVC Options
-            if(parsedMediaType.MediaType == "application/vnd.marvin.hateoas+json")
-            {
-                var links = CreateLinksForAuthor(authorId, fields);
 
-                var linkedResourceToReturn = _mapper.Map<AuthorDto>(authorFromRepo)
-                                                .ShapeData<AuthorDto>(fields) as IDictionary<string, object>;
+            // StringComparison.OrdinalIgnoreCase compares string byte by byte
+            // and performance is better than StringComparison.InvariantCultureIgnoreCase
 
-                linkedResourceToReturn.Add("links", links);
 
-                return Ok(linkedResourceToReturn);
-            }
+            var includedLinks = parsedMediaType.SubTypeWithoutSuffix.EndsWith("hateoas", 
+                StringComparison.InvariantCultureIgnoreCase);
+
+            IEnumerable<LinkDto> links = new List<LinkDto>();
             
-            return Ok(_mapper.Map<AuthorDto>(authorFromRepo).ShapeData<AuthorDto>(fields));
+            if(includedLinks)
+            {
+                links = CreateLinksForAuthor(authorId, fields);
+            }
+
+            var primaryMediaType = includedLinks ?
+                parsedMediaType.SubTypeWithoutSuffix.Substring(0, parsedMediaType.SubTypeWithoutSuffix.Length - 8)  // 8 -> hateoas.
+                : parsedMediaType.SubTypeWithoutSuffix;
+
+            // NOTE: To use the custom mediaTypes we have to add output formatter to MVC Options
+            // or we can add it to controller action instead of global level with help of Produces attribute
+            if (primaryMediaType == "vnd.marvin.author.full")
+            {
+                var fullResourceToReturn = _mapper.Map<AuthorFullDto>(authorFromRepo)
+                    .ShapeData<AuthorFullDto>(fields) as IDictionary<string, object>;
+
+                if(includedLinks)
+                {                    
+                    fullResourceToReturn.Add("links", links);                    
+                }
+
+                return Ok(fullResourceToReturn);
+            }
+
+            var friendlyResourceToReturn = _mapper.Map<AuthorDto>(authorFromRepo)
+                .ShapeData<AuthorDto>(fields) as IDictionary<string, object>;
+
+            if (includedLinks)
+            {
+                friendlyResourceToReturn.Add("links", links);
+            }
+
+            return Ok(friendlyResourceToReturn);           
+          
         }
 
         [HttpPost(Name ="CreateAuthor")]
