@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Serialization;
 using System;
+using System.Linq;
 
 namespace CourseLibrary.API
 {
@@ -29,12 +31,12 @@ namespace CourseLibrary.API
         {
             services.AddControllers(setupAction =>
             {
-                setupAction.ReturnHttpNotAcceptable = true;
+                setupAction.ReturnHttpNotAcceptable = true;               
 
             }).AddNewtonsoftJson(setupAction =>
              {
                  setupAction.SerializerSettings.ContractResolver =
-                    new CamelCasePropertyNamesContractResolver();
+                    new CamelCasePropertyNamesContractResolver();                                
              })
              .AddXmlDataContractSerializerFormatters()
              .ConfigureApiBehaviorOptions(setupAction =>
@@ -80,6 +82,17 @@ namespace CourseLibrary.API
                         ContentTypes = { "application/problem+json" }
                     };
                 };
+            });
+
+            // new output formatter should be added to the MVC Options,
+            // but since we have added json serializer after MVC controller, it will get override
+
+            services.Configure<MvcOptions>(config =>
+            {
+                var newtonsoftJsonFormatter = config.OutputFormatters
+                .OfType<NewtonsoftJsonOutputFormatter>()?.FirstOrDefault();
+
+                newtonsoftJsonFormatter.SupportedMediaTypes.Add("application/vnd.marvin.hateoas+json");
             });
 
             services.AddTransient<IPropertyMappingService, PropertyMappingService>();
