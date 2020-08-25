@@ -14,6 +14,7 @@ using CourseLibrary.API.Entities;
 using System.Dynamic;
 using System.Reflection.Metadata;
 using Microsoft.Net.Http.Headers;
+using CourseLibrary.API.ActionConstraints;
 
 namespace CourseLibrary.API.Controllers
 {
@@ -165,7 +166,38 @@ namespace CourseLibrary.API.Controllers
           
         }
 
+        [HttpPost(Name = "CreateAuthorWithDateOfDeath")]
+        [RequestHeaderMatchesMediaType("Content-Type",
+          "application/vnd.marvin.authorforcreationwithdateofdeath+json")]
+        [Consumes("application/vnd.marvin.authorforcreationwithdateofdeath+json")]
+        //for this demo purpose, implementation is exactly same as for the CreateAuthor
+        public ActionResult<AuthorDto> CreateAuthorWithDateOfDeath(AuthorForCreationWithDateOfDeathDto author)
+        {
+            var authorEntity = _mapper.Map<Entities.Author>(author);
+            _courseLibraryRepository.AddAuthor(authorEntity);
+            _courseLibraryRepository.Save();
+
+            var authorToReturn = _mapper.Map<AuthorDto>(authorEntity);
+
+            var links = CreateLinksForAuthor(authorToReturn.Id, null);
+
+            var linkedResourceToReturn = authorToReturn.ShapeData<AuthorDto>(null)
+                                            as IDictionary<string, object>;
+
+            linkedResourceToReturn.Add("links", links);
+
+            return CreatedAtRoute("GetAuthor",
+                new { authorId = authorToReturn.Id },
+                linkedResourceToReturn);
+        }
+
+
         [HttpPost(Name ="CreateAuthor")]
+        [RequestHeaderMatchesMediaType("Content-Type",
+            "application/json",
+            "application/vnd.marvin.authorforcreation+json")]
+        [Consumes("application/json",
+            "application/vnd.marvin.authorforcreation+json")]
         public ActionResult<AuthorDto> CreateAuthor(AuthorForCreationDto author)
         {
             var authorEntity = _mapper.Map<Entities.Author>(author);
@@ -186,6 +218,7 @@ namespace CourseLibrary.API.Controllers
                 linkedResourceToReturn);
         }
 
+      
         [HttpOptions]
         public IActionResult GetAuthorsOptions()
         {
