@@ -33,7 +33,9 @@ namespace CourseLibrary.API
 
             services.AddControllers(setupAction =>
             {
-                setupAction.ReturnHttpNotAcceptable = true;               
+                setupAction.ReturnHttpNotAcceptable = true;
+                setupAction.CacheProfiles.Add("240SecondsCacheProfile",
+                    new CacheProfile { Duration = 240 });
 
             }).AddNewtonsoftJson(setupAction =>
              {
