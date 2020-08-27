@@ -39,7 +39,8 @@ namespace CourseLibrary.API
             {
                 validationMotionOptions.MustRevalidate = true;
             });
-            services.AddResponseCaching(); // add this before controllors & routing
+           
+            //services.AddResponseCaching(); // add this before controllors & routing
 
             services.AddControllers(setupAction =>
             {
@@ -146,7 +147,7 @@ namespace CourseLibrary.API
 
             
 
-            app.UseResponseCaching(); // add it before controller & routing
+            //app.UseResponseCaching(); // add it before controller & routing
 
             app.UseHttpCacheHeaders();
 
